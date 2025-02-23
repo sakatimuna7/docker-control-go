@@ -1,0 +1,12 @@
+# output
+dist
+# tmp file
+tmp
+
+# db sqlite
+*.db
+
+# env file
+.env
+.env.*.local
+
