@@ -18,9 +18,9 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	// Hapus semua tabel
-	DB.DropTables(new(models.User), new(models.ActivityLog))
+	DB.DropTables(new(models.User))
 	// Sinkronisasi ulang tabel (migrasi ulang)
-	err = DB.Sync2(new(models.User), new(models.ActivityLog))
+	err = DB.Sync2(new(models.User))
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}

@@ -10,11 +10,19 @@ import (
 
 func SetupRoutes(app *fiber.App) {
 	api := app.Group("/api")
+
+	// Welcome message
 	api.Get("/", func(c *fiber.Ctx) error {
 		return helpers.SuccessResponse(c, 200, "Welcome to Docker Control API", nil)
 	})
-	api.Get("/users", middleware.JWTMiddleware, middleware.ActivityLogger("Users fetched"), controllers.GetUsers)
-	api.Post("/user", middleware.JWTMiddleware, middleware.ActivityLogger("User created"), controllers.CreateUser)
-	api.Post("/user/login", controllers.UserLogin)
-	app.Get("/api/docker/containers", middleware.JWTMiddleware, controllers.GetRunningConainters)
+
+	// Group untuk User
+	users := api.Group("/users")
+	users.Get("/", middleware.JWTMiddleware, controllers.GetUsers)
+	users.Post("/", middleware.JWTMiddleware, controllers.CreateUser)
+	users.Post("/login", controllers.UserLogin)
+
+	// Group untuk Docker
+	docker := api.Group("/docker")
+	docker.Get("/containers", middleware.JWTMiddleware, controllers.GetRunningConainters)
 }

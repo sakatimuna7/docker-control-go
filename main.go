@@ -1,8 +1,9 @@
 package main
 
 import (
+	database "docker-control-go/src/configs"
 	controllers "docker-control-go/src/controllers"
-	"docker-control-go/src/database"
+	logger "docker-control-go/src/log"
 	"docker-control-go/src/routes"
 	"log"
 	"os"
@@ -14,8 +15,13 @@ import (
 func main() {
 	// Load file .env
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found")
+		log.Println("Warning: No .env file found, using default settings")
+		logger.Log.Warn("Warning: No .env file found, using default settings")
 	}
+
+	// Inisialisasi Logger
+	logger.InitLogger()
+	logger.Log.Info("Logger initialized!")
 
 	// Inisialisasi Docker Client
 	controllers.InitDockerClient()
@@ -37,5 +43,6 @@ func main() {
 	routes.SetupRoutes(app)
 
 	// Jalankan server
+	logger.Log.Info("App running on port " + port)
 	log.Fatal(app.Listen(":" + port))
 }

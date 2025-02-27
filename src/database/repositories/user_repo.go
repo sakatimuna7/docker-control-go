@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"docker-control-go/src/database"
+	database "docker-control-go/src/configs"
 	"docker-control-go/src/database/models"
 	"errors"
 )
@@ -36,4 +36,9 @@ func GetUserByUsername(username string) (*models.User, error) {
 		return nil, errors.New("user not found") // Tambahkan error jika user tidak ditemukan
 	}
 	return &user, nil
+}
+
+func UpdateUser(user *models.User) error {
+	_, err := database.DB.ID(user.ID).Update(user)
+	return err
 }

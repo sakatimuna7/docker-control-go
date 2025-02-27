@@ -10,3 +10,6 @@ tmp
 .env
 .env.*.local
 
+# logs
+logs
+
