@@ -1,7 +1,7 @@
 package main
 
 import (
-	database "docker-control-go/src/configs"
+	"docker-control-go/src/configs"
 	controllers "docker-control-go/src/controllers"
 	logger "docker-control-go/src/log"
 	"docker-control-go/src/routes"
@@ -33,7 +33,11 @@ func main() {
 	}
 
 	// Init database
-	database.InitDB()
+	configs.InitDB()
+	configs.InitRedis()
+
+	// Inisialisasi Casbin
+	configs.InitCasbin(configs.DB)
 
 	// Inisialisasi Fiber
 	app := fiber.New()

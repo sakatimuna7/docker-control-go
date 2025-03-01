@@ -14,6 +14,8 @@ import (
 func SeedAll(db *xorm.Engine) {
 	log.Println("Running all seeders...")
 
+	// Jalankan seeder untuk permission
+	seeders.SeedPermissions()
 	seeders.UserSeeder(db)
 
 	log.Println("All seeders completed!")
@@ -36,6 +38,8 @@ func main() {
 		log.Fatal("❌ Database not initialized")
 		logger.Log.Error("❌ Database not initialized")
 	}
+	// inisialisasi casbin
+	database.InitCasbin(database.DB)
 
 	defer func() {
 		if database.DB != nil {
@@ -46,6 +50,7 @@ func main() {
 
 	// Jalankan semua seeder
 	SeedAll(database.DB)
+	// Jalankan seeder untuk permission
 	log.Println("All seeders executed successfully!")
 	logger.Log.Info("All seeders executed successfully!")
 }

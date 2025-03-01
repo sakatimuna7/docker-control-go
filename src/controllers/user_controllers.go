@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"docker-control-go/src/database/models"
 	"docker-control-go/src/database/repositories"
 	"docker-control-go/src/database/validations"
 	"docker-control-go/src/helpers"
@@ -13,15 +12,14 @@ import (
 )
 
 func GetUsers(c *fiber.Ctx) error {
-	users, err := services.FetchUsers()
+	maskStr := c.Query("mask", "true") // Default ke "true" jika tidak ada query
+	mask, _ := strconv.ParseBool(maskStr)
+
+	users, err := services.FetchUsers(mask)
 	if err != nil {
 		return helpers.ErrorResponse(c, 500, "Failed to fetch users", err)
 	}
-	mask := c.Query("mask") == "true"
-
-	// Pastikan data ter-masking
-	maskedUsers := helpers.MaskPrivateFields(users, mask)
-	return helpers.SuccessResponse(c, 200, "Users fetched successfully", maskedUsers)
+	return helpers.SuccessResponse(c, 200, "Users fetched successfully", users)
 }
 
 func CreateUser(c *fiber.Ctx) error {
@@ -37,27 +35,14 @@ func CreateUser(c *fiber.Ctx) error {
 		return helpers.ErrorResponse(c, 400, "Invalid request payload", errors)
 	}
 
-	hashPassword, err := helpers.HashPassword(payload.Password)
+	// create user
+	user, err := services.RegisterUser(&payload)
+
 	if err != nil {
-		return helpers.ErrorResponse(c, 500, "Failed to hash password", err)
-	}
-
-	payload.Password = hashPassword
-
-	// Buat user baru
-	user := models.User{
-		Username: payload.Username,
-		Password: payload.Password,
-		Role:     "user",
-	}
-
-	if err := services.RegisterUser(&user); err != nil {
 		return helpers.ErrorResponse(c, 500, "Failed to create user", err)
 	}
-	// Pastikan data ter-masking
-	maskedUser := helpers.MaskPrivateFields(user, true)
 
-	return helpers.SuccessResponse(c, 200, "User created successfully", maskedUser)
+	return helpers.SuccessResponse(c, 200, "User created successfully", user)
 }
 
 func GetUserByID(c *fiber.Ctx) error {
@@ -87,9 +72,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	// Konversi string ke int64
 	userID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		return c.Status(400).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
+		return helpers.ErrorResponse(c, 400, "Invalid user ID", err)
 	}
 	// Gunakan userID dalam fungsi
 	user, err := repositories.GetUserByID(userID)
@@ -142,7 +125,7 @@ func UserLogin(c *fiber.Ctx) error {
 		return helpers.ErrorResponse(c, 500, "Failed to login user", err)
 	}
 
-	token, _ := middleware.GenerateToken(uint(user.ID), user.Role)
+	token, _ := middleware.GenerateToken(user)
 	return helpers.SuccessResponse(c, 200, "User logged in successfully", map[string]interface{}{
 		"token": token,
 	})

@@ -1,4 +1,4 @@
-package database
+package configs
 
 import (
 	"docker-control-go/src/database/models"
