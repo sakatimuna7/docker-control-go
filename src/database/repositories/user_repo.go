@@ -17,13 +17,16 @@ func CreateUser(user *models.User) error {
 	return err
 }
 
-func GetUserByID(id int64) (*models.User, error) {
+func GetUserByID(id string) (*models.User, error) {
 	var user models.User
 	has, err := database.DB.ID(id).Get(&user)
-	if !has {
-		return nil, err
+	if err != nil {
+		return nil, err // Error dari database
 	}
-	return &user, err
+	if !has {
+		return nil, errors.New("user not found") // Tambahkan error eksplisit jika user tidak ada
+	}
+	return &user, nil
 }
 
 func GetUserByUsername(username string) (*models.User, error) {

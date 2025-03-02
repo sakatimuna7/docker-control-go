@@ -6,8 +6,13 @@ type UserCreatePayload struct {
 }
 
 type UserUpdatePayload struct {
-	ID       int64  `json:"id"`
+	ID       string `json:"id"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Role     string `json:"role"`
+}
+type UserUpdatePasswordPayload struct {
+	OldPassword     string `json:"oldPassword"`
+	ConfirmPassword string `json:"confirmPassword"`
+	Password        string `json:"password"`
 }

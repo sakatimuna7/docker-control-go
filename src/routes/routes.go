@@ -19,8 +19,13 @@ func SetupRoutes(app *fiber.App) {
 	// Group untuk User
 	users := api.Group("/users")
 	users.Get("/", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "read"), controllers.GetUsers)
+	users.Get("/:id", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "read"), controllers.GetUserByID)
+	users.Get("/:username/username", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "read"), controllers.GetUserByUsername)
 	users.Post("/", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "write"), controllers.CreateUser)
+	users.Patch("/password", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "write"), controllers.UpdateUserPassword)
+	// Auth
 	users.Post("/login", controllers.UserLogin)
+	users.Delete("/logout", middlewares.JWTMiddleware, controllers.UserLogout)
 
 	// roles
 	roles := api.Group("/roles", middlewares.JWTMiddleware)

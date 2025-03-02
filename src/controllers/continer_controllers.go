@@ -2,7 +2,10 @@ package controllers
 
 import (
 	"context"
+	"docker-control-go/src/configs"
+	"docker-control-go/src/constant"
 	"docker-control-go/src/helpers"
+	logger "docker-control-go/src/log"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -27,10 +30,9 @@ func InitDockerClient() {
 }
 
 // Mengambil daftar container yang sedang berjalan real-time
-func GetRunningContainersWS(c *websocket.Conn) {
+func GetRunningContainersWS(c *websocket.Conn, ctx context.Context) {
 	fmt.Println("Client connected for Docker events")
-
-	ctx := context.Background()
+	logger.Log.Info("Client connected for Docker events")
 
 	// 🔹 1. Kirim daftar container saat client pertama kali connect
 	sendContainerList(c, ctx)
@@ -60,6 +62,7 @@ func GetRunningContainersWS(c *websocket.Conn) {
 		case _, ok := <-msgs:
 			if !ok {
 				fmt.Println("Docker event channel closed")
+				logger.Log.Info("Docker event channel closed")
 				return
 			}
 
@@ -69,6 +72,7 @@ func GetRunningContainersWS(c *websocket.Conn) {
 		case err := <-errs:
 			if err != nil {
 				fmt.Println("Error receiving Docker event:", err)
+				logger.Log.Error("Error receiving Docker event:", err)
 				c.WriteMessage(websocket.TextMessage, []byte(`{"error": "Error receiving Docker events"}`))
 			}
 			return
@@ -81,11 +85,84 @@ func sendContainerList(c *websocket.Conn, ctx context.Context) {
 	containers, err := dockerClient.ContainerList(ctx, container.ListOptions{All: true})
 	if err != nil {
 		fmt.Println("Error updating container list:", err)
+		logger.Log.Error("Error updating container list:", err)
 		c.WriteMessage(websocket.TextMessage, []byte(`{"error": "Failed to update containers"}`))
 		return
 	}
 
-	data, _ := json.Marshal(containers)
+	// Ambil user ID dan user Role dari context
+	userID, ok := ctx.Value(constant.UserIDKey).(string)
+	if !ok {
+		log.Println("❌ Error: userID not found in context")
+		c.WriteMessage(websocket.TextMessage, []byte(`{"error": "Unauthorized: Missing userID"}`))
+		return
+	}
+
+	userRole, _ := ctx.Value(constant.UserRoleKey).(string) // Jika kosong, asumsi bukan admin
+
+	// Mapping data
+	var mappedContainers []map[string]interface{}
+	for _, container := range containers {
+		containerID := container.ID
+		containerName := ""
+		if len(container.Names) > 0 {
+			containerName = container.Names[0]
+		}
+
+		// Cek izin user terhadap container ini
+		permittedActions := map[string]bool{
+			"read":    false,
+			"running": false,
+			"pause":   false,
+			"restart": false,
+			"stop":    false,
+		}
+
+		// Jika user adalah admin, beri akses penuh
+		if userRole == "admin" {
+			for action := range permittedActions {
+				permittedActions[action] = true
+			}
+		} else {
+			// Cek apakah user memiliki izin read
+			allowedRead, _ := configs.Enforcer.Enforce(userID, containerID, "read")
+			if !allowedRead {
+				continue // Jika tidak punya izin read, skip container ini
+			}
+
+			// Cek izin lainnya
+			actions := []string{"running", "pause", "restart", "stop"}
+			for _, action := range actions {
+				allowed, _ := configs.Enforcer.Enforce(userID, containerID, action)
+				permittedActions[action] = allowed
+			}
+
+			// Set izin read ke true karena user bisa melihat container ini
+			permittedActions["read"] = true
+		}
+
+		// Format data container
+		mappedContainers = append(mappedContainers, map[string]interface{}{
+			"container_name":   containerName,
+			"container_id":     containerID,
+			"image":            container.Image,
+			"image_id":         container.ImageID,
+			"ports":            container.Ports,
+			"created":          container.Created,
+			"state":            container.State,
+			"status":           container.Status,
+			"permitted_action": permittedActions,
+		})
+	}
+
+	// **Jika tidak ada container yang boleh dilihat user, kirimkan array kosong (`[]`)**
+	if len(mappedContainers) == 0 {
+		c.WriteMessage(websocket.TextMessage, []byte(`[]`))
+		return
+	}
+
+	// Kirim data yang telah diformat ke client
+	data, _ := json.Marshal(mappedContainers)
 	c.WriteMessage(websocket.TextMessage, data)
 }
 
@@ -153,7 +230,7 @@ func GetRunningConainters(c *fiber.Ctx) error {
 }
 
 // WebSocket handler untuk event real-time
-func DockerEventsWS(c *websocket.Conn) {
+func DockerEventsWS(c *websocket.Conn, ctx context.Context) {
 	fmt.Println("Client connected for Docker events")
 
 	msgs, errs := dockerClient.Events(context.Background(), events.ListOptions{})
