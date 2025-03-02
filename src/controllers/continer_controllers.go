@@ -106,10 +106,12 @@ func sendContainerList(c *websocket.Conn, ctx context.Context) {
 		containerID := container.ID
 		containerName := ""
 		if len(container.Names) > 0 {
-			containerName = container.Names[0]
+			containerName = container.Names[0] // Gunakan container name
+		} else {
+			containerName = containerID // Fallback ke ID jika tidak ada nama
 		}
 
-		// Cek izin user terhadap container ini
+		// Cek izin user terhadap container ini berdasarkan containerName
 		permittedActions := map[string]bool{
 			"read":    false,
 			"running": false,
@@ -125,7 +127,7 @@ func sendContainerList(c *websocket.Conn, ctx context.Context) {
 			}
 		} else {
 			// Cek apakah user memiliki izin read
-			allowedRead, _ := configs.Enforcer.Enforce(userID, containerID, "read")
+			allowedRead, _ := configs.Enforcer.Enforce(userID, containerName, "read")
 			if !allowedRead {
 				continue // Jika tidak punya izin read, skip container ini
 			}
@@ -133,7 +135,7 @@ func sendContainerList(c *websocket.Conn, ctx context.Context) {
 			// Cek izin lainnya
 			actions := []string{"running", "pause", "restart", "stop"}
 			for _, action := range actions {
-				allowed, _ := configs.Enforcer.Enforce(userID, containerID, action)
+				allowed, _ := configs.Enforcer.Enforce(userID, containerName, action)
 				permittedActions[action] = allowed
 			}
 
@@ -169,7 +171,7 @@ func sendContainerList(c *websocket.Conn, ctx context.Context) {
 // 🔹 Tangani perintah dari client
 func handleContainerCommand(c *websocket.Conn, command string, ctx context.Context) {
 	var cmd struct {
-		Action      string `json:"action"`      // "start", "stop", "restart"
+		Action      string `json:"action"`      // "start", "stop", "restart", "pause", "unpause"
 		ContainerID string `json:"containerId"` // ID container
 	}
 
@@ -178,10 +180,47 @@ func handleContainerCommand(c *websocket.Conn, command string, ctx context.Conte
 		return
 	}
 
+	// 🔹 Ambil user ID dan user Role dari context
+	userID, ok := ctx.Value(constant.UserIDKey).(string)
+	if !ok {
+		sendWSMessage(c, "failed", "Unauthorized: Missing userID", cmd.Action, cmd.ContainerID)
+		return
+	}
+
+	userRole, _ := ctx.Value(constant.UserRoleKey).(string) // Jika kosong, asumsi bukan admin
+
+	// 🔹 Ambil daftar container untuk mendapatkan containerName
+	containers, err := dockerClient.ContainerList(ctx, container.ListOptions{All: true})
+	if err != nil {
+		sendWSMessage(c, "failed", "Failed to retrieve container list", cmd.Action, cmd.ContainerID)
+		return
+	}
+
+	var containerName string
+	for _, container := range containers {
+		if container.ID == cmd.ContainerID {
+			if len(container.Names) > 0 {
+				containerName = container.Names[0]
+			} else {
+				containerName = container.ID // Gunakan ID jika tidak ada nama
+			}
+			break
+		}
+	}
+
+	// 🔹 Cek izin akses berdasarkan nama container
+	if userRole != "admin" {
+		allowed, _ := configs.Enforcer.Enforce(userID, containerName, cmd.Action)
+		if !allowed {
+			sendWSMessage(c, "failed", "Permission denied", cmd.Action, cmd.ContainerID)
+			return
+		}
+	}
+
 	// 🔹 Kirim status "in_progress" sebelum menjalankan perintah
 	sendWSMessage(c, "in_progress", "Processing request...", cmd.Action, cmd.ContainerID)
 
-	var err error
+	// 🔹 Eksekusi perintah jika diizinkan
 	switch cmd.Action {
 	case "start":
 		err = dockerClient.ContainerStart(ctx, cmd.ContainerID, container.StartOptions{})
@@ -189,6 +228,10 @@ func handleContainerCommand(c *websocket.Conn, command string, ctx context.Conte
 		err = dockerClient.ContainerStop(ctx, cmd.ContainerID, container.StopOptions{})
 	case "restart":
 		err = dockerClient.ContainerRestart(ctx, cmd.ContainerID, container.StopOptions{})
+	case "pause":
+		err = dockerClient.ContainerPause(ctx, cmd.ContainerID)
+	case "unpause":
+		err = dockerClient.ContainerUnpause(ctx, cmd.ContainerID)
 	default:
 		sendWSMessage(c, "failed", "Unknown command", cmd.Action, cmd.ContainerID)
 		return
@@ -216,17 +259,84 @@ func sendWSMessage(c *websocket.Conn, status, message, action, containerID strin
 }
 
 func GetRunningConainters(c *fiber.Ctx) error {
-	// 🔹 1. Kirim daftar container saat client pertama kali connect
-	containers, err := dockerClient.ContainerList(context.Background(), container.ListOptions{
-		All: true, // Ambil semua container (running & stopped)
-	})
-
+	// // 🔹 1. Kirim daftar container saat client pertama kali connect
+	ctx := context.Background()
+	containers, err := dockerClient.ContainerList(ctx, container.ListOptions{All: true})
 	if err != nil {
-		return helpers.ErrorResponse(c, 500, "Failed to get running containers", err)
+		fmt.Println("Error updating container list:", err)
+		logger.Log.Error("Error updating container list:", err)
+		return helpers.ErrorResponse(c, 500, "Failed to update containers", err)
 	}
 
-	// return c.JSON(fiber.Map{"message": "get running containers", "data": containers, "error": err})
-	return helpers.SuccessResponse(c, 200, "get running containers", containers)
+	// Ambil user ID dan user Role dari context
+	userID := c.Locals("userID").(string)
+	userRole := c.Locals("userRole").(string)
+
+	// Mapping data
+	var mappedContainers []map[string]interface{}
+	for _, container := range containers {
+		containerID := container.ID
+		containerName := ""
+		if len(container.Names) > 0 {
+			containerName = container.Names[0] // Gunakan container name
+		} else {
+			containerName = containerID // Fallback ke ID jika tidak ada nama
+		}
+
+		// Cek izin user terhadap container ini
+		permittedActions := map[string]bool{
+			"read":    false,
+			"running": false,
+			"pause":   false,
+			"restart": false,
+			"stop":    false,
+		}
+
+		// Jika user adalah admin, beri akses penuh
+		if userRole == "admin" {
+			for action := range permittedActions {
+				permittedActions[action] = true
+			}
+		} else {
+			// Cek apakah user memiliki izin read
+			allowedRead, _ := configs.Enforcer.Enforce(userID, containerName, "read")
+			if !allowedRead {
+				continue // Jika tidak punya izin read, skip container ini
+			}
+
+			// Cek izin lainnya
+			actions := []string{"running", "pause", "restart", "stop"}
+			for _, action := range actions {
+				allowed, _ := configs.Enforcer.Enforce(userID, containerName, action)
+				permittedActions[action] = allowed
+			}
+
+			// Set izin read ke true karena user bisa melihat container ini
+			permittedActions["read"] = true
+		}
+
+		// Format data container
+		mappedContainers = append(mappedContainers, map[string]interface{}{
+			"container_name":   containerName,
+			"container_id":     containerID,
+			"image":            container.Image,
+			"image_id":         container.ImageID,
+			"ports":            container.Ports,
+			"created":          container.Created,
+			"state":            container.State,
+			"status":           container.Status,
+			"permitted_action": permittedActions,
+		})
+	}
+
+	// **Jika tidak ada container yang boleh dilihat user, kirimkan array kosong (`[]`)**
+	if len(mappedContainers) == 0 {
+		// c.WriteMessage(websocket.TextMessage, []byte(`[]`))
+		return helpers.SuccessResponse(c, 200, "get running containers", []interface{}{})
+	}
+
+	// c.WriteMessage(websocket.TextMessage, data)
+	return helpers.SuccessResponse(c, 200, "get running containers", mappedContainers)
 }
 
 // WebSocket handler untuk event real-time

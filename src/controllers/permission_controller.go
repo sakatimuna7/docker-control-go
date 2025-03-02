@@ -26,3 +26,28 @@ func AddRolePermission(c *fiber.Ctx) error {
 	logger.Log.Info("Permission added successfully to Casbin")
 	return helpers.SuccessResponse(c, 201, "Permission added successfully", nil)
 }
+
+func GetAllPermissions(c *fiber.Ctx) error {
+	// Ambil semua aturan dari Casbin
+	permissions, _ := configs.Enforcer.GetPolicy()
+
+	// Jika tidak ada aturan, kembalikan response kosong
+	if len(permissions) == 0 {
+		return helpers.SuccessResponse(c, 200, "No permissions found", []map[string]string{})
+	}
+
+	// Format data agar lebih mudah dibaca
+	var formattedPermissions []map[string]string
+	for _, rule := range permissions {
+		if len(rule) < 3 {
+			continue // Lewati aturan yang tidak lengkap
+		}
+		formattedPermissions = append(formattedPermissions, map[string]string{
+			"user":   rule[0],
+			"object": rule[1],
+			"action": rule[2],
+		})
+	}
+
+	return helpers.SuccessResponse(c, 200, "Permissions fetched successfully", formattedPermissions)
+}

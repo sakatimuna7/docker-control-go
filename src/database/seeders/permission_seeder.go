@@ -15,8 +15,16 @@ func SeedPermissions() {
 	// Tambahkan permission default
 	permissions := []models.Permission{
 		{Role: "admin", Obj: "resource:user", Act: "read"},
-		{Role: "admin", Obj: "resource:user", Act: "write"},
-		{Role: "user", Obj: "resource:user", Act: "read"},
+		{Role: "admin", Obj: "resource:user", Act: "create"},
+		{Role: "admin", Obj: "resource:user", Act: "update"},
+		{Role: "admin", Obj: "resource:permissions", Act: "read"},
+		{Role: "admin", Obj: "resource:permissions-containers", Act: "read"},
+		{Role: "admin", Obj: "resource:permissions-containers", Act: "read-user"},
+		{Role: "admin", Obj: "resource:permissions-containers", Act: "create"},
+		{Role: "admin", Obj: "resource:permissions-containers", Act: "delete"},
+		{Role: "admin", Obj: "resource:docker-containers", Act: "read"},
+		{Role: "user", Obj: "resource:docker-containers", Act: "read"},
+		{Role: "user", Obj: "resource:permissions-containers", Act: "read"},
 	}
 
 	// Tambahkan role ke Casbin

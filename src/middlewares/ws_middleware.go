@@ -31,9 +31,6 @@ func WebSocketAuthMiddleware(next func(*websocket.Conn, context.Context)) func(*
 			return
 		}
 
-		// 🛠️ Debug: Cetak pesan yang diterima
-		log.Println("📩 Received message:", string(message))
-
 		// Pastikan JSON valid sebelum parsing
 		if !json.Valid(message) {
 			log.Println("❌ JSON is not valid")
@@ -49,9 +46,6 @@ func WebSocketAuthMiddleware(next func(*websocket.Conn, context.Context)) func(*
 			c.WriteMessage(websocket.TextMessage, []byte(`{"error": "Invalid authentication format"}`))
 			return
 		}
-
-		// 🛠️ Debug: Cetak token yang diterima
-		log.Println("🔑 Received token:", authMsg.Token)
 
 		// Validasi JWT
 		claims, err := ValidateJWT(authMsg.Token)

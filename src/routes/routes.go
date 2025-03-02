@@ -21,18 +21,30 @@ func SetupRoutes(app *fiber.App) {
 	users.Get("/", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "read"), controllers.GetUsers)
 	users.Get("/:id", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "read"), controllers.GetUserByID)
 	users.Get("/:username/username", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "read"), controllers.GetUserByUsername)
-	users.Post("/", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "write"), controllers.CreateUser)
-	users.Patch("/password", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "write"), controllers.UpdateUserPassword)
+	users.Post("/create", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "create"), controllers.CreateUser)
+	users.Patch("/password", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "update"), controllers.UpdateUserPassword)
 	// Auth
 	users.Post("/login", controllers.UserLogin)
 	users.Delete("/logout", middlewares.JWTMiddleware, controllers.UserLogout)
 
 	// roles
-	roles := api.Group("/roles", middlewares.JWTMiddleware)
+	// roles := api.Group("/roles", middlewares.JWTMiddleware)
 	// roles.Get("/", middlewares.JWTMiddleware, controllers.GetRoles)
-	roles.Post("add-permission", controllers.AddRolePermission)
+	// roles.Post("add-permission", controllers.AddRolePermission)
+
+	// permission group
+	permissions := api.Group("/permissions", middlewares.JWTMiddleware)
+	permissions.Get("/", middlewares.Authorize("resource:permissions", "read"), controllers.GetAllPermissions)
+
+	// Group untuk Container
+	container := permissions.Group("/containers")
+
+	container.Get("/", middlewares.JWTMiddleware, middlewares.Authorize("resource:permissions-containers", "read"), controllers.GetUserPermissions)
+	container.Get("/:id/user", middlewares.Authorize("resource:permissions-containers", "read-user"), controllers.GetUserPermissionsByUserID)
+	container.Post("/add", middlewares.Authorize("resource:permissions-containers", "create"), controllers.AddContainerPermission)
+	container.Post("/remove", middlewares.Authorize("resource:permissions-containers", "delete"), controllers.RemoveContainerPermission)
 
 	// Group untuk Docker
-	docker := api.Group("/docker")
-	docker.Get("/containers", middlewares.JWTMiddleware, controllers.GetRunningConainters)
+	docker := api.Group("/docker", middlewares.JWTMiddleware)
+	docker.Get("/containers", middlewares.Authorize("resource:docker-containers", "read"), middlewares.JWTMiddleware, controllers.GetRunningConainters)
 }
