@@ -23,4 +23,7 @@ func SetupRoutesWS(app *fiber.App) {
 
 	// WebSocket untuk Docker events (bisa tambahkan autentikasi jika perlu)
 	app.Get("/ws/events", websocket.New(middlewares.WebSocketAuthMiddleware(controllers.DockerEventsWS)))
+
+	//  WebSocket untuk daftar process
+	app.Get("/ws/web-services", websocket.New(middlewares.WebSocketAuthMiddleware(controllers.PM2Controller)))
 }

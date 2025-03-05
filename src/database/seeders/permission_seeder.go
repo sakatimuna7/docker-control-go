@@ -23,7 +23,13 @@ func SeedPermissions() {
 		{Role: "admin", Obj: "resource:permissions-containers", Act: "create"},
 		{Role: "admin", Obj: "resource:permissions-containers", Act: "delete"},
 		{Role: "admin", Obj: "resource:docker-containers", Act: "read"},
+		{Role: "admin", Obj: "resource:permissions-process-manager", Act: "create"},
+		{Role: "admin", Obj: "resource:permissions-process-manager", Act: "delete"},
+		{Role: "admin", Obj: "resource:file-list", Act: "read"},
+		{Role: "admin", Obj: "resource:pm2", Act: "read"},
 		{Role: "user", Obj: "resource:docker-containers", Act: "read"},
+		{Role: "user", Obj: "resource:pm2", Act: "read"},
+		{Role: "user", Obj: "resource:file-list", Act: "read"},
 		{Role: "user", Obj: "resource:permissions-containers", Act: "read"},
 	}
 

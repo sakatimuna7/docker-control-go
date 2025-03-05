@@ -16,6 +16,10 @@ func SetupRoutes(app *fiber.App) {
 		return helpers.SuccessResponse(c, 200, "Welcome to Docker Control API", nil)
 	})
 
+	// file manager
+	file := api.Group("/files", middlewares.JWTMiddleware)
+	file.Get("/list", middlewares.Authorize("resource:file-list", "read"), controllers.ListFilesHandler)
+
 	// Group untuk User
 	users := api.Group("/users")
 	users.Get("/", middlewares.JWTMiddleware, middlewares.Authorize("resource:user", "read"), controllers.GetUsers)
@@ -35,6 +39,10 @@ func SetupRoutes(app *fiber.App) {
 	// permission group
 	permissions := api.Group("/permissions", middlewares.JWTMiddleware)
 	permissions.Get("/", middlewares.Authorize("resource:permissions", "read"), controllers.GetAllPermissions)
+	permissions.Post("/container/add", middlewares.Authorize("resource:permissions-containers", "create"), controllers.AddProcessPermission)
+	permissions.Delete("/container/remove", middlewares.Authorize("resource:permissions-containers", "delete"), controllers.RemoveProcessPermission)
+	permissions.Post("/process-manager/add", middlewares.Authorize("resource:permissions-process-manager", "create"), controllers.AddProcessPermission)
+	permissions.Delete("/process-manager/remove", middlewares.Authorize("resource:permissions-process-manager", "delete"), controllers.RemoveProcessPermission)
 
 	// Group untuk Container
 	container := permissions.Group("/containers")

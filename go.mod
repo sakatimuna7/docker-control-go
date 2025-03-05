@@ -10,14 +10,52 @@ require (
 )
 
 require (
+	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
 	github.com/casbin/casbin/v2 v2.103.0 // indirect
 	github.com/casbin/govaluate v1.3.0 // indirect
 	github.com/casbin/xorm-adapter/v3 v3.4.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/gorilla/rpc v1.2.0 // indirect
+	github.com/jessevdk/go-flags v1.5.0 // indirect
+	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
+	github.com/kardianos/service v1.2.0 // indirect
+	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/natefinch/lumberjack v2.0.0+incompatible // indirect
+	github.com/ochinchina/filechangemonitor v0.3.1 // indirect
+	github.com/ochinchina/go-daemon v0.1.5 // indirect
+	github.com/ochinchina/go-ini v1.0.1 // indirect
+	github.com/ochinchina/go-reaper v0.0.0-20181016012355-6b11389e79fc // indirect
+	github.com/ochinchina/gorilla-xmlrpc v0.0.0-20171012055324-ecf2fe693a2c // indirect
+	github.com/ochinchina/supervisord v0.7.3 // indirect
+	github.com/ochinchina/supervisord/config v0.0.0-20210503132557-74b0760cc12e // indirect
+	github.com/ochinchina/supervisord/events v0.0.0-20210503132557-74b0760cc12e // indirect
+	github.com/ochinchina/supervisord/faults v0.0.0-20210503132557-74b0760cc12e // indirect
+	github.com/ochinchina/supervisord/logger v0.0.0-20210503132557-74b0760cc12e // indirect
+	github.com/ochinchina/supervisord/process v0.0.0-20210503132557-74b0760cc12e // indirect
+	github.com/ochinchina/supervisord/signals v0.0.0-20210503132557-74b0760cc12e // indirect
+	github.com/ochinchina/supervisord/types v0.0.0-20210503132557-74b0760cc12e // indirect
+	github.com/ochinchina/supervisord/util v0.0.0-20210503132557-74b0760cc12e // indirect
+	github.com/ochinchina/supervisord/xmlrpcclient v0.0.0-20210503132557-74b0760cc12e // indirect
+	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
+	github.com/prometheus/client_golang v1.10.0 // indirect
+	github.com/prometheus/client_model v0.2.0 // indirect
+	github.com/prometheus/common v0.23.0 // indirect
+	github.com/prometheus/procfs v0.6.0 // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
+	github.com/rogpeppe/go-charset v0.0.0-20190617161244-0dc95cdf6f31 // indirect
+	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
+	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/tklauser/go-sysconf v0.3.12 // indirect
+	github.com/tklauser/numcpus v0.6.1 // indirect
+	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	google.golang.org/protobuf v1.36.3 // indirect
 )
 
 require (
@@ -42,6 +80,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/kolo/xmlrpc v0.0.0-20220921171641-a4b6fa1dd06b
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-colorable v0.1.13 // indirect
